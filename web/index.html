@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flappy Med</title>
+  <link rel="stylesheet" href="/_addons/flappy_med/web/css/game.css">
+</head>
+
+<body>
+  <div class="app-shell">
+    <header class="hud">
+      <div class="hud-item">Score: <span id="score">0</span></div>
+      <div class="hud-item">Best: <span id="best-score">0</span></div>
+    </header>
+
+    <div class="content">
+      <main class="game-panel">
+        <canvas id="game-canvas" width="460" height="640" aria-label="Flappy Med game canvas"></canvas>
+
+        <section id="overlay" class="overlay overlay-visible" aria-live="polite">
+          <div class="overlay-card">
+            <h1>Flappy Med</h1>
+            <p>Click or press Space to flap.</p>
+            <p>Avoid the IV pipes. Don’t faceplant.</p>
+            <p class="overlay-subtle">
+              Press Space / Click to start. Press again after death to instantly restart.
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <div class="sidebar">
+        <aside class="leaderboard-panel">
+          <h2>Leaderboard</h2>
+          <div class="player-settings">
+            <label for="display-name-input">Display name</label>
+            <div class="player-settings-row">
+              <input id="display-name-input" type="text" maxlength="12" placeholder="Player" autocomplete="off"
+                spellcheck="false" />
+              <button id="save-name-button" type="button">Save</button>
+            </div>
+            <div id="name-feedback" class="name-feedback" aria-live="polite"></div>
+          </div>
+          <ul id="leaderboard-list">
+            <li class="leaderboard-empty">No scores yet</li>
+          </ul>
+        </aside>
+        <aside class="info-panel">
+          <h2>Session</h2>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Player</span>
+              <span id="session-player-name" class="info-value">Player</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Best Run</span>
+              <span id="session-best-run" class="info-value">0</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Runs</span>
+              <span id="session-run-count" class="info-value">0</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Last Score</span>
+              <span id="session-last-score" class="info-value">0</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+    <script src="/_addons/flappy_med/web/js/bridge.js"></script>
+    <script src="/_addons/flappy_med/web/js/game.js"></script>
+</body>
+
+</html>

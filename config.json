@@ -1,0 +1,9 @@
+{
+  "backend_base_url": "https://flappy-med-backend.onrender.com",
+  "player_id": "",
+  "display_name": "Player",
+  "high_score": 0,
+  "window_width": 700,
+  "window_height": 760,
+  "debug": false
+}
