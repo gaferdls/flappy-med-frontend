@@ -55,5 +55,13 @@
     setDisplayName(name) {
       safePycmd(`flappy_med:set_display_name:${name}`);
     },
+
+    openUrl(url) {
+      const a = document.createElement('a');
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    },
   };
 })();

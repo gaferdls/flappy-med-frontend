@@ -1,1 +1,1 @@
-{"config": {"backend_base_url": "https://flappy-med-backend.onrender.com", "player_id": "e9a3f781-287d-404a-baf5-658acf2f5f68", "display_name": "DUDU", "high_score": 31, "window_width": 820, "window_height": 820, "debug": false}}
+{"mod": 0, "name": "Flappy Med", "disabled": false, "config": {"backend_base_url": "https://flappy-med-backend.onrender.com", "player_id": "23231b9534f94ebfb3a46367b5366e5b", "display_name": "Dudu", "high_score": 46, "window_width": 760, "window_height": 760, "debug": false}}

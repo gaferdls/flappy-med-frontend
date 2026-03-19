@@ -1,6 +1,16 @@
 (function () {
   'use strict';
 
+  // --- Difficulty ramp constants (easy to tune) ---
+  const SPEED_BASE       = 180;  // px/s at score 0
+  const SPEED_PER_POINT  = 2.5;  // px/s gained per point
+  const SPEED_MAX        = 260;  // px/s hard cap (~score 32)
+
+  const GAP_BASE         = 170;  // px opening at score 0
+  const GAP_PER_POINT    = 1.5;  // px removed per point
+  const GAP_MIN          = 120;  // px hard floor (~score 33)
+  // ------------------------------------------------
+
   class Bird {
     constructor(x, y) {
       this.x = x;
@@ -405,18 +415,25 @@
       this.overlayElement.classList.remove('overlay-visible');
     }
 
+    _getDifficulty(score) {
+      const speed = Math.min(SPEED_MAX, SPEED_BASE + score * SPEED_PER_POINT);
+      const gap   = Math.max(GAP_MIN,   GAP_BASE  - score * GAP_PER_POINT);
+      return { speed, gap };
+    }
+
     _spawnPipe() {
+      const { speed, gap } = this._getDifficulty(this.score);
       const safeTop = 60;
-      const safeBottom = this.height - this.groundHeight - 60 - this.pipeGap;
+      const safeBottom = this.height - this.groundHeight - 60 - gap;
       const gapTop = safeTop + Math.random() * Math.max(20, safeBottom - safeTop);
 
       this.pipes.push(
         new PipePair(
           this.width + 24,
           gapTop,
-          this.pipeGap,
+          gap,
           this.pipeWidth,
-          this.pipeSpeed,
+          speed,
           this.height - this.groundHeight
         )
       );
