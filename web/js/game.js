@@ -16,6 +16,7 @@
       this.radius = 18;
       this.velocityY = 0;
       this.rotation = 0;
+      this.bounds = { left: 0, right: 0, top: 0, bottom: 0 };
     }
 
     flap(jumpVelocity) {
@@ -29,12 +30,11 @@
     }
 
     getBounds() {
-      return {
-        left: this.x - this.radius,
-        right: this.x + this.radius,
-        top: this.y - this.radius,
-        bottom: this.y + this.radius
-      };
+      this.bounds.left = this.x - this.radius;
+      this.bounds.right = this.x + this.radius;
+      this.bounds.top = this.y - this.radius;
+      this.bounds.bottom = this.y + this.radius;
+      return this.bounds;
     }
 
     draw(ctx) {
@@ -131,10 +131,10 @@
 
     collidesWith(bounds) {
       return (
-        bounds.right  > this.x - this.radius &&
-        bounds.left   < this.x + this.radius &&
+        bounds.right > this.x - this.radius &&
+        bounds.left < this.x + this.radius &&
         bounds.bottom > this.y - this.radius &&
-        bounds.top    < this.y + this.radius
+        bounds.top < this.y + this.radius
       );
     }
 
@@ -216,12 +216,18 @@
     _updateEconomyUI() {
       if (!window.FlappyMedEconomy) return;
       const s = window.FlappyMedEconomy.getState();
-      const freeLivesEl  = document.getElementById('hud-free-lives');
-      const coinsEl      = document.getElementById('hud-coins');
+      const livesEl = document.getElementById('hud-free-lives');
+      const coinsEl = document.getElementById('hud-coins');
       const bonusLivesEl = document.getElementById('economy-bonus-lives');
-      if (freeLivesEl)  freeLivesEl.textContent  = String(s.freeLives);
-      if (coinsEl)      coinsEl.textContent      = String(s.coins);
+
+      if (livesEl) livesEl.textContent = String(s.freeLives + s.bonusLives);
+      if (coinsEl) coinsEl.textContent = String(s.coins);
       if (bonusLivesEl) bonusLivesEl.textContent = String(s.bonusLives);
+
+      const buy1Btn = document.getElementById('buy-1-life-btn');
+      const buy3Btn = document.getElementById('buy-3-lives-btn');
+      if (buy1Btn) buy1Btn.disabled = s.coins < 15;
+      if (buy3Btn) buy3Btn.disabled = s.coins < 40;
     }
 
     _bindEvents() {
@@ -395,23 +401,37 @@
         this.bestScoreElement.textContent = String(this.bestScore);
       });
 
-      const storeModal     = document.getElementById('store-modal');
-      const storeOpenBtn   = document.getElementById('store-open-btn');
-      const storeCloseBtn  = document.getElementById('store-modal-close');
-      if (storeOpenBtn  && storeModal) storeOpenBtn.addEventListener('click',  () => storeModal.classList.add('store-modal-visible'));
-      if (storeCloseBtn && storeModal) storeCloseBtn.addEventListener('click', () => storeModal.classList.remove('store-modal-visible'));
-      window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && storeModal) storeModal.classList.remove('store-modal-visible'); });
-
-      const grantLifeBtn  = document.getElementById('grant-bonus-life-btn');
-      const grantCoinsBtn = document.getElementById('grant-coins-btn');
-      if (grantLifeBtn) {
-        grantLifeBtn.addEventListener('click', () => {
-          if (window.FlappyMedEconomy) { window.FlappyMedEconomy.grantBonusLife(); this._updateEconomyUI(); }
+      const storeModal = document.getElementById('store-modal');
+      const storeOpenBtn = document.getElementById('store-open-btn');
+      const storeCloseBtn = document.getElementById('store-modal-close');
+      if (storeOpenBtn && storeModal) {
+        storeOpenBtn.addEventListener('click', () => {
+          storeModal.classList.add('store-modal-visible');
+          this._updateEconomyUI();
         });
       }
-      if (grantCoinsBtn) {
-        grantCoinsBtn.addEventListener('click', () => {
-          if (window.FlappyMedEconomy) { window.FlappyMedEconomy.grantCoins(10); this._updateEconomyUI(); }
+      if (storeCloseBtn && storeModal) storeCloseBtn.addEventListener('click', () => storeModal.classList.remove('store-modal-visible'));
+      if (storeModal) {
+        storeModal.addEventListener('click', (e) => {
+          if (e.target === storeModal) storeModal.classList.remove('store-modal-visible');
+        });
+      }
+      window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && storeModal) storeModal.classList.remove('store-modal-visible'); });
+
+      const buy1LifeBtn = document.getElementById('buy-1-life-btn');
+      const buy3LivesBtn = document.getElementById('buy-3-lives-btn');
+      if (buy1LifeBtn) {
+        buy1LifeBtn.addEventListener('click', () => {
+          if (window.FlappyMedEconomy && window.FlappyMedEconomy.buyBonusLives(1, 15)) {
+            this._updateEconomyUI();
+          }
+        });
+      }
+      if (buy3LivesBtn) {
+        buy3LivesBtn.addEventListener('click', () => {
+          if (window.FlappyMedEconomy && window.FlappyMedEconomy.buyBonusLives(3, 40)) {
+            this._updateEconomyUI();
+          }
         });
       }
     }
@@ -576,7 +596,8 @@
         return;
       }
 
-      for (const pipe of this.pipes) {
+      for (let i = this.pipes.length - 1; i >= 0; i--) {
+        const pipe = this.pipes[i];
         pipe.update(dt);
 
         if (!pipe.passed && pipe.x + pipe.width < this.bird.x) {
@@ -589,9 +610,11 @@
           this._kill();
           return;
         }
-      }
 
-      this.pipes = this.pipes.filter((pipe) => !pipe.isOffscreen());
+        if (pipe.isOffscreen()) {
+          this.pipes.splice(i, 1);
+        }
+      }
 
       for (let i = this.coins.length - 1; i >= 0; i--) {
         const coin = this.coins[i];
@@ -612,10 +635,12 @@
       const ctx = this.ctx;
       ctx.clearRect(0, 0, this.width, this.height);
 
-      const sky = ctx.createLinearGradient(0, 0, 0, this.height);
-      sky.addColorStop(0, '#67e8f9');
-      sky.addColorStop(1, '#d9f99d');
-      ctx.fillStyle = sky;
+      if (!this.bgGradient) {
+        this.bgGradient = ctx.createLinearGradient(0, 0, 0, this.height);
+        this.bgGradient.addColorStop(0, '#67e8f9');
+        this.bgGradient.addColorStop(1, '#d9f99d');
+      }
+      ctx.fillStyle = this.bgGradient;
       ctx.fillRect(0, 0, this.width, this.height);
 
       ctx.fillStyle = 'rgba(255,255,255,0.4)';
@@ -650,7 +675,9 @@
         this.lastTime = timestamp;
       }
 
-      const dt = Math.min((timestamp - this.lastTime) / 1000, 0.033);
+      // Capping at 0.100s prevents the physics engine from going into literal slow-motion 
+      // when Chromium throttles the frame rate on overloaded machines!
+      const dt = Math.min((timestamp - this.lastTime) / 1000, 0.1);
       this.lastTime = timestamp;
 
       this._update(dt);

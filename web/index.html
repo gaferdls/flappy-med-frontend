@@ -13,6 +13,8 @@
     <header class="hud">
       <div class="hud-item">Score: <span id="score">0</span></div>
       <div class="hud-item">Best: <span id="best-score">0</span></div>
+      <div class="hud-item hud-lives">&#9829; <span id="hud-free-lives">3</span></div>
+      <div class="hud-item hud-coins">&#9679; <span id="hud-coins">0</span></div>
     </header>
 
     <div class="content">
@@ -47,26 +49,10 @@
             <li class="leaderboard-empty">No scores yet</li>
           </ul>
         </aside>
-        <aside class="info-panel">
-          <h2>Session</h2>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Player</span>
-              <span id="session-player-name" class="info-value">Player</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Best Run</span>
-              <span id="session-best-run" class="info-value">0</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Runs</span>
-              <span id="session-run-count" class="info-value">0</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Last Score</span>
-              <span id="session-last-score" class="info-value">0</span>
-            </div>
-          </div>
+
+        <aside class="store-panel">
+          <p class="store-text">Lives, skins &amp; themes</p>
+          <button class="store-button" id="store-open-btn" type="button">Store</button>
         </aside>
         <aside class="donate-panel">
           <p class="donate-text">Enjoying Flappy Med?</p>
@@ -77,7 +63,25 @@
         </aside>
       </div>
     </div>
+    <div id="store-modal" class="store-modal" role="dialog" aria-modal="true" aria-labelledby="store-modal-title">
+      <div class="store-modal-card">
+        <h2 id="store-modal-title">Store</h2>
+        <div class="store-items">
+          <div class="store-item">
+            <div class="store-item-info"><span>+1 Life</span></div>
+            <button id="buy-1-life-btn" class="buy-button" type="button"><span class="cost">&#9679; 15</span></button>
+          </div>
+          <div class="store-item">
+            <div class="store-item-info"><span>+3 Lives</span><span class="discount">Best Value</span></div>
+            <button id="buy-3-lives-btn" class="buy-button" type="button"><span class="cost">&#9679; 40</span></button>
+          </div>
+        </div>
+        <button id="store-modal-close" class="store-modal-close" type="button">Close</button>
+      </div>
+    </div>
+
     <script src="/_addons/flappy_med/web/js/bridge.js"></script>
+    <script src="/_addons/flappy_med/web/js/economy.js"></script>
     <script src="/_addons/flappy_med/web/js/game.js"></script>
 </body>
 

@@ -84,15 +84,6 @@
     return true;
   }
 
-  // --- Testing / dev helpers (gate or remove before shipping) ---
-
-  function grantBonusLife() {
-    const state = getState();
-    state.bonusLives += 1;
-    _save(state);
-    return state;
-  }
-
   function grantCoins(amount) {
     const state = getState();
     state.coins += amount;
@@ -100,7 +91,14 @@
     return state;
   }
 
-  // --------------------------------------------------------------
+  function buyBonusLives(amount, cost) {
+    if (!_isLoaded) return false;
+    if (_state.coins < cost) return false;
+    _state.coins -= cost;
+    _state.bonusLives += amount;
+    _save(_state);
+    return true;
+  }
 
-  window.FlappyMedEconomy = { getState, consumeLife, grantBonusLife, grantCoins };
+  window.FlappyMedEconomy = { getState, consumeLife, grantCoins, buyBonusLives };
 })();
