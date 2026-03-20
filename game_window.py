@@ -150,9 +150,8 @@ class FlappyMedDialog(QDialog):
                     player_id=profile["player_id"],
                     display_name=profile["display_name"],
                 )
-            except Exception as exc:
-                showWarning(f"Flappy Med failed to register player:\n{exc}")
-                return True, None
+            except Exception:
+                pass
 
             js_payload = json.dumps(profile)
             self.web.eval(
@@ -189,9 +188,8 @@ class FlappyMedDialog(QDialog):
             try:
                 print("Flappy Med submit_score:", profile["player_id"], score, type(score))
                 result = submit_score(profile["player_id"], score)
-            except Exception as exc:
-                showWarning(f"Flappy Med failed to submit score:\n{exc}")
-                return True, None
+            except Exception:
+                result = {"error": "offline"}
 
             js_payload = json.dumps(result)
             self.web.eval(
@@ -202,9 +200,8 @@ class FlappyMedDialog(QDialog):
         if payload == "get_leaderboard":
             try:
                 result = get_leaderboard(limit=10)
-            except Exception as exc:
-                showWarning(f"Flappy Med failed to fetch leaderboard:\n{exc}")
-                return True, None
+            except Exception:
+                result = {"items": [], "offline": True}
 
             js_payload = json.dumps(result)
             self.web.eval(
@@ -220,15 +217,35 @@ class FlappyMedDialog(QDialog):
                     player_id=profile["player_id"],
                     display_name=profile["display_name"],
                 )
-            except Exception as exc:
-                showWarning(f"Flappy Med failed to update display name:\n{exc}")
-                return True, None
+            except Exception:
+                pass
 
             js_payload = json.dumps(profile)
             self.web.eval(
                 f"window.FlappyMedBridge.receivePlayerProfile({js_payload});"
             )
             return True, None
+
+        if payload == "request_economy_state":
+            economy = self._config.get("economy", {})
+            js_payload = json.dumps(economy)
+            self.web.eval(
+                f"window.FlappyMedBridge.receiveEconomyState({js_payload});"
+            )
+            return True, None
+
+        if payload.startswith("save_economy_state:"):
+            raw_json = payload.split(":", 1)[1]
+            try:
+                payload_dict = json.loads(raw_json)
+            except (ValueError, KeyError):
+                return True, None
+            config = get_config()
+            config["economy"] = payload_dict
+            mw.addonManager.writeConfig(__name__, config)
+            self._config["economy"] = payload_dict
+            return True, None
+
         return False, None
 
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -242,3 +259,4 @@ class FlappyMedDialog(QDialog):
 
         self.web.cleanup()
         super().closeEvent(event)
+        self.deleteLater()

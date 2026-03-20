@@ -56,6 +56,20 @@
       safePycmd(`flappy_med:set_display_name:${name}`);
     },
 
+    requestEconomyState() {
+      safePycmd('flappy_med:request_economy_state');
+    },
+
+    saveEconomyState(json) {
+      safePycmd(`flappy_med:save_economy_state:${json}`);
+    },
+
+    receiveEconomyState(payload) {
+      window.dispatchEvent(
+        new CustomEvent('flappy-med:economy-state', { detail: payload })
+      );
+    },
+
     openUrl(url) {
       const a = document.createElement('a');
       a.href = url;

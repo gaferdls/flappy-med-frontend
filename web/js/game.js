@@ -1,15 +1,13 @@
 (function () {
   'use strict';
 
-  // --- Difficulty ramp constants (easy to tune) ---
-  const SPEED_BASE       = 180;  // px/s at score 0
-  const SPEED_PER_POINT  = 2.5;  // px/s gained per point
-  const SPEED_MAX        = 260;  // px/s hard cap (~score 32)
+  const SPEED_BASE = 180;
+  const SPEED_PER_POINT = 2.5;
+  const SPEED_MAX = 260;
 
-  const GAP_BASE         = 170;  // px opening at score 0
-  const GAP_PER_POINT    = 1.5;  // px removed per point
-  const GAP_MIN          = 120;  // px hard floor (~score 33)
-  // ------------------------------------------------
+  const GAP_BASE = 170;
+  const GAP_PER_POINT = 1.5;
+  const GAP_MIN = 120;
 
   class Bird {
     constructor(x, y) {
@@ -115,6 +113,39 @@
     }
   }
 
+  class Coin {
+    constructor(x, y, speed) {
+      this.x = x;
+      this.y = y;
+      this.radius = 12;
+      this.speed = speed;
+    }
+
+    update(dt) {
+      this.x -= this.speed * dt;
+    }
+
+    isOffscreen() {
+      return this.x + this.radius < 0;
+    }
+
+    collidesWith(bounds) {
+      return (
+        bounds.right  > this.x - this.radius &&
+        bounds.left   < this.x + this.radius &&
+        bounds.bottom > this.y - this.radius &&
+        bounds.top    < this.y + this.radius
+      );
+    }
+
+    draw(ctx) {
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   class Game {
     constructor() {
       this.canvas = document.getElementById('game-canvas');
@@ -140,6 +171,7 @@
       this.spawnTimer = 0;
       this.state = 'idle';
       this.pipes = [];
+      this.coins = [];
       this.bird = new Bird(120, this.height / 2);
 
       this.playerInitialized = false;
@@ -154,6 +186,7 @@
       this._syncBestScoreFromPython();
       this._reset(false);
       this._updateSessionPanel();
+      this._updateEconomyUI();
       requestAnimationFrame(this._loop.bind(this));
     }
 
@@ -180,6 +213,17 @@
       }
     }
 
+    _updateEconomyUI() {
+      if (!window.FlappyMedEconomy) return;
+      const s = window.FlappyMedEconomy.getState();
+      const freeLivesEl  = document.getElementById('hud-free-lives');
+      const coinsEl      = document.getElementById('hud-coins');
+      const bonusLivesEl = document.getElementById('economy-bonus-lives');
+      if (freeLivesEl)  freeLivesEl.textContent  = String(s.freeLives);
+      if (coinsEl)      coinsEl.textContent      = String(s.coins);
+      if (bonusLivesEl) bonusLivesEl.textContent = String(s.bonusLives);
+    }
+
     _bindEvents() {
       const nameInput = document.getElementById('display-name-input');
       const saveNameButton = document.getElementById('save-name-button');
@@ -202,6 +246,11 @@
         }
 
         list.innerHTML = '';
+
+        if (data.offline) {
+          list.innerHTML = '<li class="leaderboard-empty">Offline. Leaderboard unavailable.</li>';
+          return;
+        }
 
         const scores = data.items || [];
 
@@ -335,12 +384,36 @@
         { passive: false }
       );
 
+      window.addEventListener('flappy-med:economy-state', () => {
+        this._updateEconomyUI();
+      });
+
       window.addEventListener('flappy-med:python-state', (event) => {
         const payload = event.detail || {};
         const highScore = Number(payload.highScore || 0);
         this.bestScore = Math.max(this.bestScore, highScore);
         this.bestScoreElement.textContent = String(this.bestScore);
       });
+
+      const storeModal     = document.getElementById('store-modal');
+      const storeOpenBtn   = document.getElementById('store-open-btn');
+      const storeCloseBtn  = document.getElementById('store-modal-close');
+      if (storeOpenBtn  && storeModal) storeOpenBtn.addEventListener('click',  () => storeModal.classList.add('store-modal-visible'));
+      if (storeCloseBtn && storeModal) storeCloseBtn.addEventListener('click', () => storeModal.classList.remove('store-modal-visible'));
+      window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && storeModal) storeModal.classList.remove('store-modal-visible'); });
+
+      const grantLifeBtn  = document.getElementById('grant-bonus-life-btn');
+      const grantCoinsBtn = document.getElementById('grant-coins-btn');
+      if (grantLifeBtn) {
+        grantLifeBtn.addEventListener('click', () => {
+          if (window.FlappyMedEconomy) { window.FlappyMedEconomy.grantBonusLife(); this._updateEconomyUI(); }
+        });
+      }
+      if (grantCoinsBtn) {
+        grantCoinsBtn.addEventListener('click', () => {
+          if (window.FlappyMedEconomy) { window.FlappyMedEconomy.grantCoins(10); this._updateEconomyUI(); }
+        });
+      }
     }
 
     _syncBestScoreFromPython() {
@@ -364,11 +437,15 @@
     _handleInput() {
       this._ensurePlayerInitialized();
 
-      if (this.state === 'idle') {
-        this._reset(true);
-        this.state = 'running';
-        this._hideOverlay();
-      } else if (this.state === 'dead') {
+      if (this.state === 'idle' || this.state === 'dead') {
+        if (window.FlappyMedEconomy) {
+          const s = window.FlappyMedEconomy.getState();
+          if (s.freeLives + s.bonusLives === 0) {
+            this.state = 'dead';
+            this._showOverlay('No lives left. Daily lives refill tomorrow!');
+            return;
+          }
+        }
         this._reset(true);
         this.state = 'running';
         this._hideOverlay();
@@ -383,6 +460,7 @@
       this.score = 0;
       this.spawnTimer = 0;
       this.pipes = [];
+      this.coins = [];
       this.bird = new Bird(120, this.height / 2);
 
       if (!preserveBestScore) {
@@ -417,7 +495,7 @@
 
     _getDifficulty(score) {
       const speed = Math.min(SPEED_MAX, SPEED_BASE + score * SPEED_PER_POINT);
-      const gap   = Math.max(GAP_MIN,   GAP_BASE  - score * GAP_PER_POINT);
+      const gap = Math.max(GAP_MIN, GAP_BASE - score * GAP_PER_POINT);
       return { speed, gap };
     }
 
@@ -437,11 +515,33 @@
           this.height - this.groundHeight
         )
       );
+
+      if (Math.random() < 0.3) {
+        if (Math.random() < 0.5) {
+          // Safe: centered in the gap
+          this.coins.push(new Coin(
+            this.width + 24 + this.pipeWidth / 2,
+            gapTop + gap / 2,
+            speed
+          ));
+        } else {
+          // Dangerous: between previous and new pipe, random vertical position
+          this.coins.push(new Coin(
+            (this.width + 24) - (speed * this.pipeSpawnEvery / 2) + (this.pipeWidth / 2),
+            40 + Math.random() * ((this.height - this.groundHeight) - 80),
+            speed
+          ));
+        }
+      }
     }
 
     _kill() {
       this.state = 'dead';
       this._showOverlay('Game over. Press Space or click to instantly restart.');
+      if (window.FlappyMedEconomy) {
+        window.FlappyMedEconomy.consumeLife();
+        this._updateEconomyUI();
+      }
 
       if (this.score > this.bestScore) {
         this.bestScore = this.score;
@@ -492,6 +592,20 @@
       }
 
       this.pipes = this.pipes.filter((pipe) => !pipe.isOffscreen());
+
+      for (let i = this.coins.length - 1; i >= 0; i--) {
+        const coin = this.coins[i];
+        coin.update(dt);
+        if (coin.collidesWith(birdBounds)) {
+          if (window.FlappyMedEconomy) {
+            window.FlappyMedEconomy.grantCoins(1);
+            this._updateEconomyUI();
+          }
+          this.coins.splice(i, 1);
+        } else if (coin.isOffscreen()) {
+          this.coins.splice(i, 1);
+        }
+      }
     }
 
     _drawBackground() {
@@ -522,6 +636,10 @@
 
       for (const pipe of this.pipes) {
         pipe.draw(this.ctx);
+      }
+
+      for (const coin of this.coins) {
+        coin.draw(this.ctx);
       }
 
       this.bird.draw(this.ctx);
