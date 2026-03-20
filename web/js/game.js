@@ -42,23 +42,56 @@
       ctx.translate(this.x, this.y);
       ctx.rotate(this.rotation);
 
+      // Base Body (Bright Orange/Yellow)
       ctx.fillStyle = '#f59e0b';
       ctx.beginPath();
       ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#111827';
+      // Medical Hat Dome
+      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(6, -5, 3, 0, Math.PI * 2);
+      ctx.arc(0, -12, 11, Math.PI, 0); // Semicircle popping above the head
       ctx.fill();
 
+      // Medical Hat Rim
+      ctx.fillStyle = '#f8fafc';
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.rect(-12, -13, 24, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // Red Cross on Hat
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-3, -20, 6, 2); // Horizontal bar
+      ctx.fillRect(-1, -22, 2, 6); // Vertical bar
+
+      // Eye
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.arc(6, -3, 3, 0, Math.PI * 2); // Eye sits just under the hat rim
+      ctx.fill();
+
+      // Beak
       ctx.fillStyle = '#f97316';
       ctx.beginPath();
-      ctx.moveTo(this.radius - 4, -2);
-      ctx.lineTo(this.radius + 14, 3);
-      ctx.lineTo(this.radius - 4, 8);
+      ctx.moveTo(this.radius - 4, 0);
+      ctx.lineTo(this.radius + 14, 5);
+      ctx.lineTo(this.radius - 4, 10);
       ctx.closePath();
       ctx.fill();
+
+      // Wing (White Lab Coat Sleeve)
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      // An oval wing on the side of the bird, slightly angled
+      ctx.ellipse(-4, 4, 9, 6, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
 
       ctx.restore();
     }

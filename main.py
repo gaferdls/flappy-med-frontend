@@ -11,14 +11,47 @@ you're doing architecture cosplay instead of engineering.
 
 from __future__ import annotations
 
-from aqt import mw
+from aqt import gui_hooks, mw
 from aqt.qt import QAction
 
+from .config import get_config
 from .game_window import FlappyMedDialog, ensure_js_bridge_hook
 
 _window: FlappyMedDialog | None = None
 _action: QAction | None = None
 _initialized = False
+
+cards_reviewed_this_session = 0
+
+
+def on_card_answered(reviewer, card, ease):
+    global cards_reviewed_this_session
+    cards_reviewed_this_session += 1
+
+
+def grant_deck_completion_lives(amount: int):
+    config = get_config()
+    economy = config.get("economy", {"freeLives": 10, "bonusLives": 0, "coins": 0, "lastDailyReset": ""})
+
+    economy.setdefault("bonusLives", 0)
+    economy["bonusLives"] += amount
+    config["economy"] = economy
+
+    mw.addonManager.writeConfig(__name__, config)
+
+    from aqt.utils import tooltip
+    tooltip(f"🎉 Deck Finished! +{amount} lives added to Flappy Med!")
+
+
+def on_state_changed(new_state: str, old_state: str):
+    global cards_reviewed_this_session
+    if old_state == "review" and new_state in ["overview", "deckBrowser"]:
+        if cards_reviewed_this_session > 0:
+            counts = mw.col.sched.counts()
+            if sum(counts) == 0:
+                grant_deck_completion_lives(5)
+
+            cards_reviewed_this_session = 0
 
 
 def init_addon() -> None:
@@ -29,6 +62,8 @@ def init_addon() -> None:
     _register_web_exports()
     ensure_js_bridge_hook()
     _add_menu_action()
+    gui_hooks.reviewer_did_answer_card.append(on_card_answered)
+    gui_hooks.state_did_change.append(on_state_changed)
     _initialized = True
 
 

@@ -1,11 +1,15 @@
 (function () {
   'use strict';
 
-  const FREE_LIVES_MAX = 3;
+  const FREE_LIVES_MAX = 10;
 
   function todayString() {
-    // UTC date string "YYYY-MM-DD" — consistent across timezones for daily reset
-    return new Date().toISOString().slice(0, 10);
+    // Local date string "YYYY-MM-DD" so daily reset happens at local midnight
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   // In-memory state — safe defaults until Python responds asynchronously.
